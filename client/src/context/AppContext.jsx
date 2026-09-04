@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/api";
 
 const AppContext = createContext(undefined);
@@ -23,12 +23,13 @@ export function AppCOntextProvider({ children }) {
 
     useEffect(() => {
         checkSession()
-    },[checkSession])
+    }, [])
 
   return (
     <AppContext.Provider value={{
         user,
-        loadingUser
+        loadingUser,
+        setUser
     }}>
       {children}
     </AppContext.Provider>
