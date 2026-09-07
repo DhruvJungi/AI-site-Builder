@@ -1,11 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React,{ createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../api/api";
+import debounce from "lodash.debounce";
 
 const AppContext = createContext(undefined);
 
-export function AppCOntextProvider({ children }) {
+export function AppContextProvider({ children }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -126,6 +127,52 @@ export function AppCOntextProvider({ children }) {
     }
   }, [user]);
 
+  const handleChat = useCallback(
+    async (prompt)=>{
+      if(!activeProject || !user) return;
+      setChatLoading(true)
+      try {
+        const { data } = await api.post(`/api/projects/${activeProject._id}/chat`, {prompt});
+        setActiveProject(data)
+        if(data.errors && data.errors.length > 0 ){
+          toast.error(`${data.errors.length} revision patch(es) failed`);
+        } else{
+          toast.success(`Updated to version ${data.version}`);
+        }
+      }catch (err){
+        console.error("Revision request failed:", err);
+        toast.error(err?.response?.data?.error || "Revision request failed");
+      }finally{
+        setChatLoading(false)
+      }
+
+    },[activeProject, user]
+  )
+
+  const debouncedSave = React.useMemo(
+    ()=>debounce(async (files, id) => {
+      try {
+        await api.put(`/api/projects/${id}/files`, { files });
+      } catch (err) {
+        console.error("Failed to auto-save files:", err);
+        toast.error("Failed to save code modification");
+      }
+    },1000),[],
+  )
+
+  useEffect(() => {
+    return ()=>{
+      debouncedSave.cancel();
+    }
+  }, [debouncedSave]);
+
+  const updateProjectFiles = useCallback(
+    async (files) => {
+      if(!activeProject || !user ) return;
+      debouncedSave(files, activeProject._id)
+    },[activeProject, user, debouncedSave]
+  )
+
   return (
     <AppContext.Provider value={{
       user,
@@ -142,6 +189,7 @@ export function AppCOntextProvider({ children }) {
       loadProject,
       chatLoading,
       setChatLoading,
+      handleChat,
       generatingProject,
       handleGenerate,
       handleDelete,
@@ -149,6 +197,7 @@ export function AppCOntextProvider({ children }) {
       setActiveFile,
       showCode,
       setShowCode,
+      updateProjectFiles
     }}>
       {children}
     </AppContext.Provider>
@@ -158,7 +207,7 @@ export function AppCOntextProvider({ children }) {
 export function useAppContext() {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error("useAppContext must be used within an AppCOntextProvider");
+    throw new Error("useAppContext must be used within an AppContextProvider");
   }
   return context;
 }
