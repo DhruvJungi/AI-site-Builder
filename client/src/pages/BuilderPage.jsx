@@ -96,7 +96,7 @@ const BuilderPage = () => {
                 <MessageSquareIcon size={13} /> Chat
               </button>
 
-              <button onClick={()=> setLeftTab("files")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium cursor-pointer ${leftTab === "chat" ? "text-zinc-900 border-b-2 border-zinc-900" : "text-zinc-400 hover:text-zinc-700"}`}>
+              <button onClick={()=> setLeftTab("files")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium cursor-pointer ${leftTab === "files" ? "text-zinc-900 border-b-2 border-zinc-900" : "text-zinc-400 hover:text-zinc-700"}`}>
                 <FolderTreeIcon size={13} /> Files 
               </button>
           </div>
