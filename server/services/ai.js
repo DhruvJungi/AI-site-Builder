@@ -141,13 +141,15 @@ export async function generateProject(prompt, callbacks){
         const failedPaths = pendingFiles.map((f)=>f.path).join(", ");
         console.error(`[AI] Failed to generate ${pendingFiles.length} files after all retry rounds: ${failedPaths}`);
 
-        if (pendingFiles.some((f) => f.path === "/App.js")){
-            const ext = file.path.split(".").pop()?.toLowerCase();
+        for (const file of pendingFiles) {
+            const path = file.path.startsWith("/") ? file.path : `/${file.path}`;
+            file.path = path;
+            const ext = path.split(".").pop()?.toLowerCase();
 
             if(ext === "css"){
                 files[file.path] = `/* ${file.description} — Generation failed, please retry */\n`
             }else{
-                files[file.path] = "import React from 'react';\n\n" + 
+                files[path] = "import React from 'react';\n\n" +
                 `// ⚠️ This file could not be generated. Please retry.\n` +
                 `// Purpose: ${file.description}\n\n` + 
                 "export default function Placeholder() {\n" +
@@ -166,7 +168,7 @@ export async function generateProject(prompt, callbacks){
         throw new Error("AI did not generate /App.js entry point");
     }
 
-    return {files, description: plan.projectDescription}
+    return {files, name: plan.projectName, description: plan.projectDescription}
 }
 
 export async function reviseProject(prompt, manifest, relevantFiles, recentMessages){

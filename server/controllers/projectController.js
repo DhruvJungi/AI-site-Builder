@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { Project } from "../models/Project.js";
+import { generateProject } from "../services/ai.js";
 
 function hashContent(content) {
     return crypto.createHash("md5").update(content).digest("hex").slice(0, 12);
@@ -7,6 +8,68 @@ function hashContent(content) {
 
 async function runBackgroundGeneration(projectId, prompt) {
     console.log(`[Background AI] Starting generation for project ${projectId}: ${prompt.slice(0, 80)}...`);
+
+    try {
+        await Project.findByIdAndUpdate(projectId, {
+            status: "generating",
+            error: null,
+            currentFile: null,
+            filesPlanned: [],
+            filesGenerated: [],
+        });
+
+        const result = await generateProject(prompt, {
+            onPlan: async (plan) => {
+                await Project.findByIdAndUpdate(projectId, {
+                    status: "generating",
+                    name: plan.projectName || "Generated Project",
+                    description: plan.projectDescription || prompt,
+                    filesPlanned: plan.files.map(({ path, description }) => ({ path, description })),
+                });
+            },
+            onFileStart: async (path) => {
+                await Project.findByIdAndUpdate(projectId, { currentFile: path });
+            },
+            onFileComplete: async (path) => {
+                await Project.findByIdAndUpdate(projectId, {
+                    currentFile: path,
+                    $addToSet: { filesGenerated: path },
+                });
+            },
+        });
+
+        const project = await Project.findById(projectId);
+        if (!project) return;
+
+        project.name = result.name || project.name;
+        project.description = result.description || project.description;
+        project.files = Object.fromEntries(
+            Object.entries(result.files).map(([path, content]) => [
+                path,
+                { content, hash: hashContent(content) },
+            ]),
+        );
+        project.filesGenerated = Object.keys(result.files);
+        project.currentFile = null;
+        project.status = "completed";
+        project.version = Math.max(project.version, 1);
+        project.error = null;
+        project.messages.push({ role: "assistant", content: "Website generation completed." });
+        await project.save();
+    } catch (err) {
+        console.error(`[Background AI] Generation failed for project ${projectId}:`, err);
+        await Project.findByIdAndUpdate(projectId, {
+            status: "failed",
+            currentFile: null,
+            error: err.message || "Failed to generate project",
+            $push: {
+                messages: {
+                    role: "assistant",
+                    content: "Website generation failed. Please try again.",
+                },
+            },
+        });
+    }
 }
 
 export async function createProject(req, res) {

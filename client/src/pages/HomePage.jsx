@@ -91,7 +91,7 @@ const HomePage = () => {
 
                 <div className='space-y-2 max-h-[80vh] overflow-y-auto pr-1'>
                   {projects.map((p)=>(
-                    <div key={p.id} className='bg-white/5 border border-white/10 rounded-lg px-4 py-3 flex items-center justify-between group hover:border-white/20 hover:bg-white/10 cursor-pointer backdrop-blur-md transition-all'
+                    <div key={p._id} className='bg-white/5 border border-white/10 rounded-lg px-4 py-3 flex items-center justify-between group hover:border-white/20 hover:bg-white/10 cursor-pointer backdrop-blur-md transition-all'
                     onClick={()=> navigate(`/builder/${p._id}`)}>
                         
                         <div className='flex-1 min-w-0'>
