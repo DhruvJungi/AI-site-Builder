@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.62",
+    "ai": "^7.0.94",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -12,7 +14,9 @@
     "express": "^5.2.1",
     "init": "^0.1.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.9.5"
+    "mongoose": "^9.9.5",
+    "p-map": "^7.0.7",
+    "zod": "^4.5.4"
   },
   "scripts": {
     "start": "node server.js",
